@@ -1,53 +1,101 @@
 package org.example.bttuan6.config;
 
+import org.example.bttuan6.repository.AppUserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /**
+     * Bean mã hóa mật khẩu với BCrypt
+     */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable()) // Tắt CSRF để test API cho dễ
-                .authorizeHttpRequests((requests) -> requests
-                        .requestMatchers("/", "/home", "/tour/**", "/api/**", "/css/**", "/js/**").permitAll() // Ai cũng xem được
-                        .requestMatchers("/admin/**").hasRole("ADMIN") // Chỉ admin mới vào được trang admin
-                        .anyRequest().authenticated()
-                )
-                .formLogin((form) -> form
-                        .loginPage("/login") // Trang login tùy chỉnh
-                        .defaultSuccessUrl("/", true) // Login xong về trang chủ
-                        .permitAll()
-                )
-                .logout((logout) -> logout.permitAll());
-
-        return http.build();
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
-    // Tạo user giả lập để test (Thực tế sẽ lấy từ Database)
+    /**
+     * Lấy thông tin user từ MySQL qua JPA
+     */
     @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails user = User.withDefaultPasswordEncoder()
-                .username("user")
-                .password("123")
-                .roles("USER")
-                .build();
+    public UserDetailsService userDetailsService(AppUserRepository userRepository) {
+        return username -> userRepository.findByUsername(username)
+                .map(u -> User.withUsername(u.getUsername())
+                        .password(u.getPassword())     // ĐÃ là password mã hóa
+                        .roles(u.getRole())            // "USER", "ADMIN" -> Spring sẽ tự thêm tiền tố "ROLE_"
+                        .disabled(!u.isEnabled())
+                        .build())
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("Không tìm thấy user: " + username));
+    }
 
-        UserDetails admin = User.withDefaultPasswordEncoder()
-                .username("admin")
-                .password("123")
-                .roles("ADMIN")
-                .build();
+    /**
+     * Cấu hình AuthenticationManager để dùng userDetailsService + passwordEncoder
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(
+            HttpSecurity http,
+            PasswordEncoder passwordEncoder,
+            UserDetailsService userDetailsService
+    ) throws Exception {
 
-        return new InMemoryUserDetailsManager(user, admin);
+        AuthenticationManagerBuilder auth =
+                http.getSharedObject(AuthenticationManagerBuilder.class);
+
+        auth.userDetailsService(userDetailsService)
+                .passwordEncoder(passwordEncoder);
+
+        return auth.build();
+    }
+
+    /**
+     * Cấu hình phân quyền + form login
+     */
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+        http
+                .csrf(csrf -> csrf.disable()) // demo nên tắt, nếu làm thật hãy cấu hình cẩn thận hơn
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/",
+                                "/login",
+                                "/register",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**"
+                        ).permitAll()
+
+                        // Chỉ ADMIN được phép vào phần admin
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+
+                        // Các request còn lại cần đăng nhập
+                        .anyRequest().authenticated()
+                )
+                .formLogin(form -> form
+                        .loginPage("/login")          // templates/login.html
+                        .loginProcessingUrl("/login") // action="post" tới /login
+                        .defaultSuccessUrl("/", true)
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/")
+                        .permitAll()
+                );
+
+        return http.build();
     }
 }
