@@ -1,37 +1,75 @@
 package org.example.bttuan6.controller;
 
-
-import com.bttuan6.entity.Tour;
-import com.bttuan6.service.TourService;
+import org.example.bttuan6.entity.Tour;
+import org.example.bttuan6.repository.TourRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/tours")
+@Controller
+@RequestMapping("/tours")
 public class TourController {
 
     @Autowired
-    private TourService tourService;
+    private TourRepository tourRepository;
 
-    // Lấy danh sách tour
+    // ======= DANH SÁCH TOUR =======
     @GetMapping
-    public List<Tour> getAllTours() {
-        return tourService.getAllTours();
+    public String listTours(Model model) {
+        List<Tour> tours = tourRepository.findAll();
+        model.addAttribute("tours", tours);
+        return "tour/list";   // => templates/tour/list.html
     }
 
-    // API lọc tour
-    @GetMapping("/search")
-    public List<Tour> searchTours(@RequestParam(required = false) String location,
-                                  @RequestParam(required = false) Double maxPrice) {
-        return tourService.filterTours(location, maxPrice);
+    // ======= FORM THÊM TOUR MỚI =======
+    @GetMapping("/new")
+    public String showCreateForm(Model model) {
+        Tour tour = new Tour();
+        model.addAttribute("tour", tour);
+        model.addAttribute("formTitle", "Thêm tour mới");
+        return "tour/form";   // => templates/tour/form.html
     }
 
-    // Admin: Thêm tour mới
-    @PostMapping("/admin/create")
-    public Tour createTour(@RequestBody Tour tour) {
-        return tourService.saveTour(tour);
+    // ======= FORM SỬA TOUR =======
+    @GetMapping("/{id}/edit")
+    public String showEditForm(@PathVariable("id") Long id, Model model) {
+        Tour tour = tourRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tour với id: " + id));
+
+        model.addAttribute("tour", tour);
+        model.addAttribute("formTitle", "Chỉnh sửa tour");
+        return "tour/form";
+    }
+
+    // ======= LƯU TOUR (CẢ THÊM MỚI + CẬP NHẬT) =======
+    @PostMapping("/save")
+    public String saveTour(@ModelAttribute("tour") Tour tour) {
+
+        if (tour.getId() == null) {
+            // tạo mới
+            tour.setCreatedAt(LocalDateTime.now());
+        } else {
+            // cập nhật: giữ nguyên createdAt cũ
+            Tour old = tourRepository.findById(tour.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tour với id: " + tour.getId()));
+            tour.setCreatedAt(old.getCreatedAt());
+        }
+        tour.setUpdatedAt(LocalDateTime.now());
+
+        tourRepository.save(tour);
+
+        return "redirect:/tours";
+    }
+
+    // (tuỳ chọn) XÓA TOUR
+    @GetMapping("/{id}/delete")
+    public String deleteTour(@PathVariable("id") Long id) {
+        tourRepository.deleteById(id);
+        return "redirect:/tours";
     }
 }
+
