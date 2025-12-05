@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${tour.title}">Chi tiết Tour</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-5">
+    <a href="/" class="btn btn-secondary mb-3">← Quay lại</a>
+    <div class="row">
+        <div class="col-md-6">
+            <img th:src="${tour.image}" class="img-fluid rounded mb-3" alt="Tour">
+            <h1 th:text="${tour.title}"></h1>
+            <h3 class="text-danger" th:text="${#numbers.formatDecimal(tour.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></h3>
+            <p th:text="${tour.description}"></p>
+            <hr>
+            <h5>Lịch khởi hành:</h5>
+            <ul class="list-group">
+                <li class="list-group-item" th:each="schedule : ${tour.schedules}">
+                    Ngày đi: <strong th:text="${schedule.departureDate}"></strong>
+                    <span class="badge bg-success float-end" th:text="'ID: ' + ${schedule.id}"></span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card p-4 shadow">
+                <h4>Đặt Tour Này</h4>
+                <form id="bookingForm">
+                    <div class="mb-3">
+                        <label>Chọn ID Lịch trình (Xem bên trái)</label>
+                        <select class="form-select" id="scheduleId" required>
+                            <option th:each="s : ${tour.schedules}" th:value="${s.id}" th:text="${s.departureDate}"></option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Họ và tên</label>
+                        <input type="text" class="form-control" id="fullName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <input type="email" class="form-control" id="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Số điện thoại</label>
+                        <input type="text" class="form-control" id="phone" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Địa chỉ</label>
+                        <input type="text" class="form-control" id="address">
+                    </div>
+                    <div class="mb-3">
+                        <label>Số người đi</label>
+                        <input type="number" class="form-control" id="quantity" min="1" value="1" required>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Xác nhận đặt tour</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('bookingForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const data = {
+            scheduleId: document.getElementById('scheduleId').value,
+            fullName: document.getElementById('fullName').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            address: document.getElementById('address').value,
+            quantity: document.getElementById('quantity').value
+        };
+
+        fetch('/api/bookings/book', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if(data.message) {
+                    alert(data.message);
+                    window.location.href = "/"; // Về trang chủ
+                } else {
+                    alert("Có lỗi xảy ra: " + JSON.stringify(data));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Lỗi kết nối server!");
+            });
+    });
+</script>
+</body>
+</html>
