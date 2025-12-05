@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách Tour</title>
+
+    <!-- BOOTSTRAP 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+        .tour-img {
+            width: 90px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+
+    <!-- ✅ HEADER ĐÃ THÊM NÚT QUAY LẠI -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <!-- ✅ NÚT QUAY LẠI TRANG CHỦ -->
+            <a href="/" class="btn btn-outline-secondary me-3">
+                ← Về Trang Chủ
+            </a>
+
+            <h2 class="fw-bold mb-0">📋 Danh sách Tour</h2>
+        </div>
+
+        <!-- 👇 Vào form thêm tour admin -->
+        <a href="/admin/tours/new" class="btn btn-primary">
+            + Thêm Tour
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <table class="table table-hover align-middle text-center">
+                <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Ảnh</th>
+                    <th>Tên Tour</th>
+                    <th>Địa điểm</th>
+                    <th>Giá</th>
+                    <th>Số ngày</th>
+                    <th>Số khách</th>
+                    <th>Hành động</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="t : ${tours}">
+                    <td th:text="${t.id}"></td>
+
+                    <td>
+                        <img th:if="${t.imageUrl != null}"
+                             th:src="${t.imageUrl}"
+                             class="tour-img">
+                    </td>
+
+                    <td class="fw-semibold" th:text="${t.name}"></td>
+                    <td th:text="${t.location}"></td>
+
+                    <td class="text-danger fw-bold"
+                        th:text="${#numbers.formatDecimal(t.price,0,'COMMA',0,'POINT')} + ' ₫'">
+                    </td>
+
+                    <td th:text="${t.durationDays}"></td>
+                    <td th:text="${t.maxGuests}"></td>
+
+                    <td>
+                        <!-- Sửa tour -->
+                        <a th:href="@{|/admin/tours/${t.id}/edit|}"
+                           class="btn btn-sm btn-warning me-1">
+                            ✏️ Sửa
+                        </a>
+
+                        <!-- Xem khách -->
+                        <a th:href="@{|/admin/tours/${t.id}/customers|}"
+                           class="btn btn-sm btn-info me-1 text-white">
+                            👥 Khách
+                        </a>
+
+                        <!-- Xoá tour -->
+                        <a th:href="@{|/admin/tours/${t.id}/delete|}"
+                           class="btn btn-sm btn-danger"
+                           onclick="return confirm('Bạn chắc chắn muốn xoá tour này?')">
+                            🗑 Xoá
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

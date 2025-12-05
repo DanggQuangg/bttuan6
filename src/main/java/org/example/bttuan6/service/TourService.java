@@ -1,6 +1,8 @@
 package org.example.bttuan6.service;
 
+import org.example.bttuan6.entity.Booking;
 import org.example.bttuan6.entity.Tour;
+import org.example.bttuan6.repository.BookingRepository;
 import org.example.bttuan6.repository.TourRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,9 @@ public class TourService {
 
     @Autowired
     private TourRepository tourRepository;
+
+    @Autowired
+    private BookingRepository bookingRepository;
 
     // ================== HÀM CŨ ==================
 
@@ -103,5 +108,9 @@ public class TourService {
         if (!tourRepository.existsById(id)) return false;
         tourRepository.deleteById(id);
         return true;
+    }
+
+    public List<Booking> getBookingsByTourId(Long tourId) {
+        return bookingRepository.findByTourId(tourId);
     }
 }

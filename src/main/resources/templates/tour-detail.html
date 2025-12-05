@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title th:text="${tour.title}">Chi tiết Tour</title>
+    <title th:text="${tour.name}">Chi tiết Tour</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -9,8 +9,10 @@
     <a href="/" class="btn btn-secondary mb-3">← Quay lại</a>
     <div class="row">
         <div class="col-md-6">
-            <img th:src="${tour.image}" class="img-fluid rounded mb-3" alt="Tour">
-            <h1 th:text="${tour.title}"></h1>
+            <img th:src="${tour.imageUrl}" class="img-fluid rounded mb-3" alt="Tour" style="width: 100%; max-height: 400px; object-fit: cover;">
+
+            <h1 th:text="${tour.name}"></h1>
+
             <h3 class="text-danger" th:text="${#numbers.formatDecimal(tour.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></h3>
             <p th:text="${tour.description}"></p>
             <hr>
@@ -19,6 +21,7 @@
                 <li class="list-group-item" th:each="schedule : ${tour.schedules}">
                     Ngày đi: <strong th:text="${schedule.departureDate}"></strong>
                     <span class="badge bg-success float-end" th:text="'ID: ' + ${schedule.id}"></span>
+                    <span class="badge bg-info float-end me-2" th:text="'Max: ' + ${schedule.maxGuests} + ' khách'"></span>
                 </li>
             </ul>
         </div>
@@ -73,6 +76,12 @@
             quantity: document.getElementById('quantity').value
         };
 
+        // Hiển thị loading hoặc thông báo đang xử lý
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.innerText = "Đang xử lý...";
+        btn.disabled = true;
+
         fetch('/api/bookings/book', {
             method: 'POST',
             headers: {
@@ -80,18 +89,21 @@
             },
             body: JSON.stringify(data)
         })
-            .then(response => response.json())
-            .then(data => {
-                if(data.message) {
-                    alert(data.message);
-                    window.location.href = "/"; // Về trang chủ
-                } else {
-                    alert("Có lỗi xảy ra: " + JSON.stringify(data));
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
                 }
+                return response.json();
+            })
+            .then(data => {
+                alert(data.message || "Đặt tour thành công!");
+                window.location.href = "/";
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert("Lỗi kết nối server!");
+                alert("Lỗi: " + error.message);
+                btn.innerText = originalText;
+                btn.disabled = false;
             });
     });
 </script>

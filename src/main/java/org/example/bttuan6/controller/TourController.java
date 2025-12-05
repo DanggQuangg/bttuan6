@@ -1,7 +1,9 @@
 package org.example.bttuan6.controller;
 
+import org.example.bttuan6.entity.Booking;
 import org.example.bttuan6.entity.Tour;
 import org.example.bttuan6.repository.TourRepository;
+import org.example.bttuan6.service.TourService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,13 +13,16 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
-@RequestMapping("/tours")
+@RequestMapping("/admin/tours")   // 👈 TẤT CẢ ROUTE ADMIN ĐỀU CHẠY DƯỚI /admin/tours
 public class TourController {
 
     @Autowired
     private TourRepository tourRepository;
 
-    // ======= DANH SÁCH TOUR =======
+    @Autowired
+    private TourService tourService;
+
+    // ======= DANH SÁCH TOUR (TRANG ADMIN) =======
     @GetMapping
     public String listTours(Model model) {
         List<Tour> tours = tourRepository.findAll();
@@ -62,14 +67,29 @@ public class TourController {
 
         tourRepository.save(tour);
 
-        return "redirect:/tours";
+        return "redirect:/admin/tours";   // 👈 quay về trang admin
     }
 
-    // (tuỳ chọn) XÓA TOUR
+    // XÓA TOUR
     @GetMapping("/{id}/delete")
     public String deleteTour(@PathVariable("id") Long id) {
         tourRepository.deleteById(id);
-        return "redirect:/tours";
+        return "redirect:/admin/tours";   // 👈 quay về admin
+    }
+
+    // ======= XEM DANH SÁCH KHÁCH THEO TOUR =======
+    @GetMapping("/{id}/customers")
+    public String viewTourCustomers(@PathVariable Long id, Model model) {
+        Tour tour = tourService.getTourById(id);
+        if (tour == null) {
+            return "redirect:/admin/tours";
+        }
+
+        List<Booking> bookings = tourService.getBookingsByTourId(id);
+
+        model.addAttribute("tour", tour);
+        model.addAttribute("bookings", bookings);
+
+        return "tour/customers"; // => templates/tour/customers.html
     }
 }
-

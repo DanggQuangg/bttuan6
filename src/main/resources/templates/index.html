@@ -13,7 +13,13 @@
                 <span sec:authorize="isAuthenticated()" class="text-white me-3 my-auto">
                     Xin chào, <span sec:authentication="name">User</span>
                 </span>
-            <a sec:authorize="hasRole('ADMIN')" href="/admin" class="btn btn-warning me-2">Trang Admin</a>
+
+            <!-- 👇 ĐÃ SỬA: Trang Admin trỏ tới /admin/tours -->
+            <a sec:authorize="hasRole('ADMIN')"
+               th:href="@{/admin/tours}"
+               class="btn btn-warning me-2">
+                Trang Admin
+            </a>
 
             <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post">
                 <button class="btn btn-light" type="submit">Đăng xuất</button>
@@ -29,12 +35,21 @@
     <div class="row">
         <div class="col-md-4 mb-4" th:each="tour : ${tours}">
             <div class="card h-100 shadow-sm">
-                <img th:src="${tour.image}" class="card-img-top" alt="Tour Image" style="height: 200px; object-fit: cover;">
+                <img th:src="${tour.imageUrl}" class="card-img-top" alt="Tour Image" style="height: 200px; object-fit: cover;">
                 <div class="card-body">
-                    <h5 class="card-title" th:text="${tour.title}">Tên Tour</h5>
-                    <p class="card-text text-danger fw-bold" th:text="${#numbers.formatDecimal(tour.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">Giá</p>
-                    <p class="card-text"><i class="bi bi-geo-alt"></i> <span th:text="${tour.location}">Địa điểm</span></p>
-                    <a th:href="@{/tour/{id}(id=${tour.id})}" class="btn btn-outline-primary w-100">Xem chi tiết & Đặt</a>
+                    <h5 class="card-title" th:text="${tour.name}">Tên Tour</h5>
+
+                    <p class="card-text text-danger fw-bold"
+                       th:text="${#numbers.formatDecimal(tour.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">
+                        Giá
+                    </p>
+                    <p class="card-text">
+                        <i class="bi bi-geo-alt"></i>
+                        <span th:text="${tour.location}">Địa điểm</span>
+                    </p>
+                    <a th:href="@{/tour/{id}(id=${tour.id})}" class="btn btn-outline-primary w-100">
+                        Xem chi tiết & Đặt
+                    </a>
                 </div>
             </div>
         </div>
